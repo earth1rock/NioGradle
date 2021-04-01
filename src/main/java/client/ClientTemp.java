@@ -1,5 +1,8 @@
 package client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -10,6 +13,7 @@ public class ClientTemp implements Runnable {
 
     InetSocketAddress inetSocketAddress;
     SocketChannel socketChannel;
+    private final Logger logger = LoggerFactory.getLogger(ClientTemp.class);
 
     ClientTemp() throws IOException {
         inetSocketAddress = new InetSocketAddress("localhost", 2222);
@@ -18,34 +22,51 @@ public class ClientTemp implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             ByteBuffer byteBuffer = ByteBuffer.allocate(140);
             try {
                 socketChannel.read(byteBuffer);
             } catch (IOException e) {
-                System.out.println(e.getMessage());
-                System.exit(0);
+                logger.error("Connection closed");
                 break;
             }
-            String result = new String(byteBuffer.array()).trim();
-            System.out.println(result);
+
+            //todo fix
+       //     String result = new String(byteBuffer.array()).trim();
+
+            byte[] tempByte = new byte[byteBuffer.capacity() - byteBuffer.remaining()];
+            byteBuffer.rewind();
+            byteBuffer.get(tempByte);
+            String result = new String(tempByte);
+            logger.info(result);
+        }
+        try {
+            socketChannel.close();
+        } catch (IOException e) {
+            logger.error(e.getMessage());
         }
     }
 
     public static void main(String[] args) throws IOException {
 
         ClientTemp clientTemp = new ClientTemp();
-        new Thread(clientTemp).start();
+        Thread clientThread = new Thread(clientTemp);
+        clientThread.start();
 
         Scanner scanner = new Scanner(System.in);
-        while (true) {
-            String message = scanner.nextLine();
-            try {
-                ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBytes());
-                clientTemp.socketChannel.write(byteBuffer);
-                byteBuffer.clear();
-            } catch (IOException exception) {
-                System.out.println(exception.getMessage());
+        while (!Thread.currentThread().isInterrupted()) {
+            String message = scanner.nextLine() + "\n";
+            if (!message.equals("/exit")) {
+                try {
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBytes());
+                    clientTemp.socketChannel.write(byteBuffer);
+                    byteBuffer.clear();
+                } catch (IOException exception) {
+                    clientTemp.logger.error(exception.getMessage());
+                    break;
+                }
+            } else {
+                clientThread.interrupt();
                 break;
             }
         }
