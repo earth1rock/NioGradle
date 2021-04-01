@@ -31,8 +31,7 @@ public class ClientTemp implements Runnable {
                 break;
             }
 
-            //todo fix
-       //     String result = new String(byteBuffer.array()).trim();
+            //todo fix reading fullsize broadcast msg
 
             byte[] tempByte = new byte[byteBuffer.capacity() - byteBuffer.remaining()];
             byteBuffer.rewind();
@@ -55,9 +54,10 @@ public class ClientTemp implements Runnable {
 
         Scanner scanner = new Scanner(System.in);
         while (!Thread.currentThread().isInterrupted()) {
-            String message = scanner.nextLine() + "\n";
+            String message = scanner.nextLine();
             if (!message.equals("/exit")) {
                 try {
+                    message += "\n";
                     ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBytes());
                     clientTemp.socketChannel.write(byteBuffer);
                     byteBuffer.clear();
@@ -72,4 +72,3 @@ public class ClientTemp implements Runnable {
         }
     }
 }
-
