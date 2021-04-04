@@ -1,5 +1,7 @@
 package client;
 
+import codec.Reader;
+import codec.Writer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,26 +25,20 @@ public class ClientTemp implements Runnable {
     @Override
     public void run() {
         while (!Thread.currentThread().isInterrupted()) {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(140);
+            Reader reader = new Reader(socketChannel);
             try {
-                socketChannel.read(byteBuffer);
-            } catch (IOException e) {
-                logger.error("Connection closed");
-                break;
+                int lengthMessage = reader.getLengthMessage();
+                if (lengthMessage > 0) {
+                    String result = reader.getMessageText(lengthMessage);
+                    logger.info(result);
+                } else {
+                    logger.info("Channel closed\n");
+                    socketChannel.close();
+                    break;
+                }
+            } catch (Exception e) {
+                logger.error(e.toString());
             }
-
-            //todo fix reading fullsize broadcast msg
-
-            byte[] tempByte = new byte[byteBuffer.capacity() - byteBuffer.remaining()];
-            byteBuffer.rewind();
-            byteBuffer.get(tempByte);
-            String result = new String(tempByte);
-            logger.info(result);
-        }
-        try {
-            socketChannel.close();
-        } catch (IOException e) {
-            logger.error(e.getMessage());
         }
     }
 
@@ -55,15 +51,12 @@ public class ClientTemp implements Runnable {
         Scanner scanner = new Scanner(System.in);
         while (!Thread.currentThread().isInterrupted()) {
             String message = scanner.nextLine();
-            if (!message.equals("/exit")) {
+            if (!message.equals("/exit") && clientTemp.socketChannel.isOpen()) {
                 try {
-                    message += "\n";
-                    ByteBuffer byteBuffer = ByteBuffer.wrap(message.getBytes());
-                    clientTemp.socketChannel.write(byteBuffer);
-                    byteBuffer.clear();
-                } catch (IOException exception) {
+                    Writer writer = new Writer(clientTemp.socketChannel);
+                    writer.sendMessage(message);
+                } catch (Exception exception) {
                     clientTemp.logger.error(exception.getMessage());
-                    break;
                 }
             } else {
                 clientThread.interrupt();
