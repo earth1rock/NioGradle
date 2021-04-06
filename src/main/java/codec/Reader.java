@@ -1,48 +1,38 @@
 package codec;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class Reader {
-    public static final byte MAX_MESSAGE_LENGTH_BYTE = 4;
     private final SocketChannel socketChannel;
+    private int buffer_size = 10;
+    private int buffer_size_step = 10;
 
     public Reader(SocketChannel socketChannel) {
         this.socketChannel = socketChannel;
     }
 
-    public int getLengthMessage() {
-        ByteBuffer messageSize = ByteBuffer.allocate(MAX_MESSAGE_LENGTH_BYTE);
+    public String readMessage() throws Exception {
         try {
-            if (socketChannel.read(messageSize) > -1) {
-                messageSize.flip();
-                byte[] bytes = new byte[messageSize.limit()];
-                messageSize.get(bytes);
-                messageSize.clear();
-                return Integer.parseInt(new String(bytes));
+            ByteBuffer byteBuffer = ByteBuffer.allocate(buffer_size);
+            socketChannel.read(byteBuffer);
+            byteBuffer.flip();
+            while (!Codec.canDecode(byteBuffer)) {
+                ByteBuffer temp = byteBuffer.duplicate();
+                buffer_size += buffer_size_step;
+                byteBuffer = ByteBuffer.allocate(buffer_size);
+                byteBuffer.put(temp);
+                socketChannel.read(byteBuffer);
+                byteBuffer.rewind();
             }
-        } catch (Exception e) {
-            return -1;
-        }
-        return -1;
-    }
+            byteBuffer.rewind();
+            return Codec.decode(byteBuffer);
 
-    public String getMessageText(int messageLength) throws Exception {
-        if (messageLength > 0) {
-            ByteBuffer messageBuffer = ByteBuffer.allocate(messageLength);
-            try {
-                if (socketChannel.read(messageBuffer) > -1) {
-                    messageBuffer.flip();
-                    byte[] message = new byte[messageBuffer.limit()];
-                    messageBuffer.get(message);
-                    messageBuffer.clear();
-                    return new String(message);
-                }
-            } catch (Exception e) {
-                throw new Exception("Error reading message");
-            }
+        } catch (Exception e) {
+            socketChannel.close();
+            throw new Exception(e);
         }
-        return "";
     }
 
 }

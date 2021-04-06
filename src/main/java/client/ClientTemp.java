@@ -24,21 +24,22 @@ public class ClientTemp implements Runnable {
 
     @Override
     public void run() {
+
         while (!Thread.currentThread().isInterrupted()) {
-            Reader reader = new Reader(socketChannel);
             try {
-                int lengthMessage = reader.getLengthMessage();
-                if (lengthMessage > 0) {
-                    String result = reader.getMessageText(lengthMessage);
-                    logger.info(result);
-                } else {
-                    logger.info("Channel closed\n");
-                    socketChannel.close();
-                    break;
-                }
-            } catch (Exception e) {
-                logger.error(e.toString());
+                Reader reader = new Reader(socketChannel);
+                String result = reader.readMessage();
+                logger.info(result);
             }
+            catch (Exception e) {
+                logger.error(e.toString());
+                break;
+            }
+        }
+        try {
+            socketChannel.close();
+        } catch (IOException e) {
+            logger.error(e.toString());
         }
     }
 
@@ -54,7 +55,7 @@ public class ClientTemp implements Runnable {
             if (!message.equals("/exit") && clientTemp.socketChannel.isOpen()) {
                 try {
                     Writer writer = new Writer(clientTemp.socketChannel);
-                    writer.sendMessage(message);
+                    writer.writeMessage(message);
                 } catch (Exception exception) {
                     clientTemp.logger.error(exception.getMessage());
                 }

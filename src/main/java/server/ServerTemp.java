@@ -2,7 +2,6 @@ package server;
 
 import codec.Reader;
 import codec.Writer;
-import org.apache.log4j.BasicConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,13 +12,12 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 import java.util.Iterator;
 
 public class ServerTemp implements Runnable {
     private final Selector selector;
     private final ServerSocketChannel serverSocketChannel;
-    private final ByteBuffer welcomeBuffer = ByteBuffer.wrap(Writer.encodeMessage("Welcome to NioChat!").getBytes());
+    private final String welcomeString = "Welcome to NioChat!";
     private final int port = 2222;
     private final Logger logger = LoggerFactory.getLogger(ServerTemp.class);
 
@@ -49,7 +47,7 @@ public class ServerTemp implements Runnable {
                     if (key.isReadable()) this.read(key);
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error(e.getMessage());
         } finally {
             try {
@@ -61,40 +59,36 @@ public class ServerTemp implements Runnable {
         }
     }
 
-    private void accept(SelectionKey key) throws IOException {
+    private void accept(SelectionKey key) throws Exception {
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
         String address = socketChannel.socket().getInetAddress().toString() + ":" + socketChannel.socket().getPort();
         socketChannel.configureBlocking(false);
         socketChannel.register(selector, SelectionKey.OP_READ, address);
+
+        //todo sending welcomeMessage
+        //Writer writer = new Writer(socketChannel);
+        //writer.writeMessage(welcomeString);
+
         echo("Connected client: " + address);
-        socketChannel.write(welcomeBuffer);
-        welcomeBuffer.rewind();
+
         logger.info("Connected client: " + address);
     }
 
     private void read(SelectionKey key) throws IOException {
 
         SocketChannel socketChannel = (SocketChannel) key.channel();
-        String result;
+        String result = "";
         Reader reader = new Reader(socketChannel);
         try {
-            int lengthMessage = reader.getLengthMessage();
-            if (lengthMessage > -1) {
-                String msg = reader.getMessageText(lengthMessage);
-                result = key.attachment() + " : " + msg;
-            }
-            else {
-                result = "Disconnect client: " + key.attachment();
-                socketChannel.close();
-            }
+            result = key.attachment() + " : " + reader.readMessage();
             logger.info(result);
             echo(result);
         }
         catch (Exception e) {
             socketChannel.close();
-            logger.error(e.toString());
+            logger.info(key.attachment() + " : " + e.getLocalizedMessage());
+            echo("Disconnect client: " + key.attachment());
         }
-
     }
 
     private void echo(String message) throws IOException {
@@ -104,13 +98,13 @@ public class ServerTemp implements Runnable {
                 SocketChannel socketChannel = (SocketChannel) key.channel();
                 writer = new Writer(socketChannel);
                 try {
-                    writer.sendMessage(message);
+                    writer.writeMessage(message);
                 } catch (Exception e) {
                     socketChannel.close();
+                    logger.error(e.toString());
                 }
             }
         }
-
     }
 }
 
