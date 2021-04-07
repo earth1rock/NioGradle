@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
@@ -32,7 +31,7 @@ public class ClientTemp implements Runnable {
                 logger.info(result);
             }
             catch (Exception e) {
-                logger.error(e.toString());
+                logger.info(e.toString());
                 break;
             }
         }

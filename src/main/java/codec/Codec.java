@@ -5,31 +5,18 @@ import java.nio.ByteBuffer;
 public class Codec {
 
     private static final short MAX_LENGTH = Short.MAX_VALUE;
+    private static final byte HEADER_SIZE = 2;
 
     public static ByteBuffer encode(String message) throws Exception {
 
         if (message.length() < MAX_LENGTH) {
             short messageLength = (short) message.length();
-            ByteBuffer messageBuffer = ByteBuffer.allocate(2 + messageLength);
+            ByteBuffer messageBuffer = ByteBuffer.allocate(HEADER_SIZE + messageLength);
             messageBuffer.putShort(messageLength);
             messageBuffer.put(message.getBytes());
             return messageBuffer;
         } else {
             throw new Exception("Max message size = " + MAX_LENGTH + " | Your message size is " + message.length());
-        }
-    }
-
-    public static boolean canDecode(ByteBuffer buffer) throws Exception {
-        short messageLength = buffer.getShort();
-        if (messageLength < MAX_LENGTH) {
-            if (messageLength > buffer.capacity()-2) {
-                buffer.rewind();
-                return false;
-            }
-            return true;
-        }
-        else {
-            throw new Exception("Max message size = " + MAX_LENGTH + " | Your message size is " + messageLength);
         }
     }
 

@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -64,12 +63,10 @@ public class ServerTemp implements Runnable {
         String address = socketChannel.socket().getInetAddress().toString() + ":" + socketChannel.socket().getPort();
         socketChannel.configureBlocking(false);
         socketChannel.register(selector, SelectionKey.OP_READ, address);
-
-        //todo sending welcomeMessage
-        //Writer writer = new Writer(socketChannel);
-        //writer.writeMessage(welcomeString);
-
         echo("Connected client: " + address);
+
+        Writer writer = new Writer(socketChannel);
+        writer.writeMessage(welcomeString);
 
         logger.info("Connected client: " + address);
     }

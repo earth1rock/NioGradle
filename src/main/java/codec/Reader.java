@@ -1,13 +1,12 @@
 package codec;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class Reader {
     private final SocketChannel socketChannel;
-    private int buffer_size = 10;
-    private int buffer_size_step = 10;
+    //2 bytes for message length
+    private final static int HEADER_SIZE = 2;
 
     public Reader(SocketChannel socketChannel) {
         this.socketChannel = socketChannel;
@@ -15,20 +14,14 @@ public class Reader {
 
     public String readMessage() throws Exception {
         try {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(buffer_size);
-            socketChannel.read(byteBuffer);
-            byteBuffer.flip();
-            while (!Codec.canDecode(byteBuffer)) {
-                ByteBuffer temp = byteBuffer.duplicate();
-                buffer_size += buffer_size_step;
-                byteBuffer = ByteBuffer.allocate(buffer_size);
-                byteBuffer.put(temp);
-                socketChannel.read(byteBuffer);
-                byteBuffer.rewind();
-            }
-            byteBuffer.rewind();
-            return Codec.decode(byteBuffer);
-
+            ByteBuffer messageLengthBuffer = ByteBuffer.allocate(HEADER_SIZE);
+            socketChannel.read(messageLengthBuffer);
+            short messageLength = messageLengthBuffer.rewind().getShort();
+            ByteBuffer message = ByteBuffer.allocate(HEADER_SIZE + messageLength);
+            message.put(messageLengthBuffer.rewind());
+            socketChannel.read(message);
+            message.rewind();
+            return Codec.decode(message);
         } catch (Exception e) {
             socketChannel.close();
             throw new Exception(e);
