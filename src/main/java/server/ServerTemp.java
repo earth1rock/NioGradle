@@ -2,6 +2,8 @@ package server;
 
 import codec.Reader;
 import codec.Writer;
+import message.Message;
+import message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +18,6 @@ import java.util.Iterator;
 public class ServerTemp implements Runnable {
     private final Selector selector;
     private final ServerSocketChannel serverSocketChannel;
-    private final String welcomeString = "Welcome to NioChat!";
     private final int port = 2222;
     private final Logger logger = LoggerFactory.getLogger(ServerTemp.class);
 
@@ -63,32 +64,53 @@ public class ServerTemp implements Runnable {
         String address = socketChannel.socket().getInetAddress().toString() + ":" + socketChannel.socket().getPort();
         socketChannel.configureBlocking(false);
         socketChannel.register(selector, SelectionKey.OP_READ, address);
-        echo("Connected client: " + address);
-
-        Writer writer = new Writer(socketChannel);
-        writer.writeMessage(welcomeString);
-
-        logger.info("Connected client: " + address);
     }
 
     private void read(SelectionKey key) throws IOException {
 
         SocketChannel socketChannel = (SocketChannel) key.channel();
-        String result = "";
         Reader reader = new Reader(socketChannel);
         try {
-            result = key.attachment() + " : " + reader.readMessage();
-            logger.info(result);
-            echo(result);
-        }
-        catch (Exception e) {
+            Message inputMessage = reader.readMessage();
+            doTask(socketChannel, inputMessage);
+        } catch (Exception e) {
             socketChannel.close();
             logger.info(key.attachment() + " : " + e.getLocalizedMessage());
-            echo("Disconnect client: " + key.attachment());
         }
     }
 
-    private void echo(String message) throws IOException {
+    private void doTask(SocketChannel socketChannel, Message inputMessage) throws Exception {
+        Message message;
+        Writer writer = new Writer(socketChannel);
+
+        switch (inputMessage.getMessageType()) {
+            case MessageType.MESSAGE:
+                message = new Message(MessageType.MESSAGE, inputMessage.getUserName(), inputMessage.getMessage());
+                echo(message);
+                logger.info(message.getFormattedMessage());
+                break;
+            case MessageType.JOIN:
+                writer.writeMessage(new Message(MessageType.WELCOME, "[SERVER]", "You're welcome"));
+                message = new Message(MessageType.MESSAGE, "[SERVER]", inputMessage.getUserName() + " connected to the server");
+                echo(message);
+                logger.info(message.getFormattedMessage()
+                        + " | " + socketChannel.socket().getInetAddress()
+                        + ":" + socketChannel.socket().getPort());
+                break;
+            case MessageType.LEAVE:
+                message = new Message(MessageType.MESSAGE, "[SERVER]", inputMessage.getUserName() + " disconnected from the server");
+                echo(message);
+                logger.info(message.getFormattedMessage()
+                        + " | " + socketChannel.socket().getInetAddress()
+                        + ":" + socketChannel.socket().getPort());
+                break;
+            case MessageType.COMMAND:
+                //todo /list /join
+                break;
+        }
+    }
+
+    private void echo(Message message) throws IOException {
         Writer writer;
         for (SelectionKey key : selector.keys()) {
             if (key.isValid() && key.channel() instanceof SocketChannel) {
