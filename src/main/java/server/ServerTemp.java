@@ -103,6 +103,7 @@ public class ServerTemp implements Runnable {
                 logger.info(message.getFormattedMessage()
                         + " | " + socketChannel.socket().getInetAddress()
                         + ":" + socketChannel.socket().getPort());
+                socketChannel.close();
                 break;
             case MessageType.COMMAND:
                 //todo /list /join

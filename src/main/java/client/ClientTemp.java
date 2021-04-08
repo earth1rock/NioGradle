@@ -69,7 +69,6 @@ public class ClientTemp implements Runnable {
         Thread clientThread = new Thread(clientTemp);
         clientThread.start();
 
-        //Writer writer = new Writer(clientTemp.socketChannel);
         while (!Thread.currentThread().isInterrupted()) {
             String inputMessage = scanner.nextLine();
             if (!inputMessage.equals("/exit") && clientTemp.socketChannel.isOpen()) {
@@ -85,7 +84,6 @@ public class ClientTemp implements Runnable {
                 } catch (Exception e) {
                     clientTemp.logger.info(e.toString());
                 }
-                clientThread.interrupt();
                 break;
             }
         }
