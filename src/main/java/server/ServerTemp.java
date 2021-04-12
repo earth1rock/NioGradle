@@ -1,5 +1,6 @@
 package server;
 
+import codec.Codec;
 import codec.Reader;
 import codec.Writer;
 import message.Message;
@@ -18,16 +19,22 @@ import java.util.Iterator;
 public class ServerTemp implements Runnable {
     private final Selector selector;
     private final ServerSocketChannel serverSocketChannel;
-    private final int port = 2222;
-    private final Logger logger = LoggerFactory.getLogger(ServerTemp.class);
+    private final static Message welcomeMessage = new Message(MessageType.WELCOME, "[SERVER]", "Welcome to NioChat!");
+    private final static Message infoMessage = new Message(MessageType.WELCOME, "[SERVER]", "If you need some help just type /help");
+    private final int port;
+    private final static Logger logger = LoggerFactory.getLogger(ServerTemp.class);
+    private final ServerHandler serverHandler;
+    private final Codec codec = new Codec();
 
-    ServerTemp() throws IOException {
+    ServerTemp(int port) throws IOException {
+        this.port = port;
         selector = Selector.open();
         serverSocketChannel = ServerSocketChannel.open();
         InetSocketAddress inetSocketAddress = new InetSocketAddress(port);
         serverSocketChannel.bind(inetSocketAddress);
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        serverHandler = new ServerHandler(selector);
     }
 
     @Override
@@ -48,82 +55,35 @@ public class ServerTemp implements Runnable {
                 }
             }
         } catch (Exception e) {
-            logger.error(e.getMessage());
+            logger.error("ERROR", e);
         } finally {
             try {
                 selector.close();
                 serverSocketChannel.close();
             } catch (IOException e) {
-                logger.error(e.getMessage());
+                logger.error("Failed to close selector/serverSocketChannel", e);
             }
         }
     }
 
     private void accept(SelectionKey key) throws Exception {
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
-        String address = socketChannel.socket().getInetAddress().toString() + ":" + socketChannel.socket().getPort();
         socketChannel.configureBlocking(false);
-        socketChannel.register(selector, SelectionKey.OP_READ, address);
+        socketChannel.register(selector, SelectionKey.OP_READ);
+        serverHandler.doTask(socketChannel, welcomeMessage);
+        serverHandler.doTask(socketChannel, infoMessage);
     }
 
     private void read(SelectionKey key) throws IOException {
 
         SocketChannel socketChannel = (SocketChannel) key.channel();
-        Reader reader = new Reader(socketChannel);
+        Reader reader = new Reader(socketChannel, codec);
         try {
             Message inputMessage = reader.readMessage();
-            doTask(socketChannel, inputMessage);
+            serverHandler.doTask(socketChannel, inputMessage);
         } catch (Exception e) {
             socketChannel.close();
-            logger.info(key.attachment() + " : " + e.getLocalizedMessage());
-        }
-    }
-
-    private void doTask(SocketChannel socketChannel, Message inputMessage) throws Exception {
-        Message message;
-        Writer writer = new Writer(socketChannel);
-
-        switch (inputMessage.getMessageType()) {
-            case MessageType.MESSAGE:
-                message = new Message(MessageType.MESSAGE, inputMessage.getUserName(), inputMessage.getMessage());
-                echo(message);
-                logger.info(message.getFormattedMessage());
-                break;
-            case MessageType.JOIN:
-                writer.writeMessage(new Message(MessageType.WELCOME, "[SERVER]", "You're welcome"));
-                message = new Message(MessageType.MESSAGE, "[SERVER]", inputMessage.getUserName() + " connected to the server");
-                echo(message);
-                logger.info(message.getFormattedMessage()
-                        + " | " + socketChannel.socket().getInetAddress()
-                        + ":" + socketChannel.socket().getPort());
-                break;
-            case MessageType.LEAVE:
-                message = new Message(MessageType.MESSAGE, "[SERVER]", inputMessage.getUserName() + " disconnected from the server");
-                echo(message);
-                logger.info(message.getFormattedMessage()
-                        + " | " + socketChannel.socket().getInetAddress()
-                        + ":" + socketChannel.socket().getPort());
-                socketChannel.close();
-                break;
-            case MessageType.COMMAND:
-                //todo /list /join
-                break;
-        }
-    }
-
-    private void echo(Message message) throws IOException {
-        Writer writer;
-        for (SelectionKey key : selector.keys()) {
-            if (key.isValid() && key.channel() instanceof SocketChannel) {
-                SocketChannel socketChannel = (SocketChannel) key.channel();
-                writer = new Writer(socketChannel);
-                try {
-                    writer.writeMessage(message);
-                } catch (Exception e) {
-                    socketChannel.close();
-                    logger.error(e.toString());
-                }
-            }
+            logger.info("Cannot read message", e);
         }
     }
 }

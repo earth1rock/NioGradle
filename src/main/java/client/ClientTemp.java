@@ -1,11 +1,13 @@
 package client;
 
+import codec.Codec;
 import codec.Reader;
 import codec.Writer;
 import message.Message;
 import message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import server.Viewer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -14,76 +16,72 @@ import java.util.Scanner;
 
 public class ClientTemp implements Runnable {
 
+    private final SocketChannel socketChannel;
+    private final static Logger logger = LoggerFactory.getLogger(ClientTemp.class);
+    private final static Validator validator = new Validator();
+    private final Codec codec = new Codec();
+    private static Reader reader;
     private static User user;
-    private static Writer writer;
-    InetSocketAddress inetSocketAddress;
-    SocketChannel socketChannel;
-    private final Logger logger = LoggerFactory.getLogger(ClientTemp.class);
+    private final ClientHandler clientHandler;
+    private final static Viewer viewer = new Viewer();
 
-    ClientTemp(String name, int port) {
-        inetSocketAddress = new InetSocketAddress("localhost", port);
+    ClientTemp(String name, String hostname, int port) throws IOException {
+        InetSocketAddress inetSocketAddress = new InetSocketAddress(hostname, port);
         user = new User(name);
-    }
-
-    private void connect() throws Exception {
         socketChannel = SocketChannel.open(inetSocketAddress);
-        writer = new Writer(socketChannel);
-        writer.writeMessage(new Message(MessageType.JOIN, user.getName(), ""));
+        reader = new Reader(socketChannel, codec);
+        clientHandler = new ClientHandler(socketChannel, user);
     }
 
     @Override
     public void run() {
-        Reader reader = new Reader(socketChannel);
+        try {
+            clientHandler.connect();
+        } catch (Exception e) {
+            logger.error("Failed to connect to server", e);
+            return;
+        }
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                logger.info(reader.readMessage().getFormattedMessage());
+                Message result = reader.readMessage();
+                viewer.print(result);
             } catch (Exception e) {
-                logger.error(e.toString());
+                logger.error("Failed to read message", e);
                 break;
             }
         }
         try {
             socketChannel.close();
         } catch (IOException e) {
-            logger.error(e.toString());
+            logger.error("Failed to close connection", e);
         }
     }
 
     public static void main(String[] args) throws Exception {
         Scanner scanner = new Scanner(System.in);
         String userName = "";
-        System.out.println("Input your nickname:");
 
-        while (!Thread.currentThread().isInterrupted()) {
+        viewer.print("Input your nickname:");
+        do {
             userName = scanner.nextLine().trim();
-            if (userName.length() > 6 && userName.length() < 127) {
-                break;
-            } else {
-                System.out.println("Nickname length must be in [7;126]");
-            }
-        }
+        } while (!validator.validate(userName));
 
-        ClientTemp clientTemp = new ClientTemp(userName, 2222);
-        clientTemp.connect();
 
+        ClientTemp clientTemp = new ClientTemp(userName, "localhost", 2222);
         Thread clientThread = new Thread(clientTemp);
         clientThread.start();
 
         while (!Thread.currentThread().isInterrupted()) {
-            String inputMessage = scanner.nextLine();
-            if (!inputMessage.equals("/exit") && clientTemp.socketChannel.isOpen()) {
+            String message = scanner.nextLine();
+            if (clientTemp.socketChannel.isOpen()) {
                 try {
-                    Message message = new Message(MessageType.MESSAGE, user.getName(), inputMessage);
-                    writer.writeMessage(message);
+                    clientTemp.clientHandler.write(message);
                 } catch (Exception e) {
-                    clientTemp.logger.error(e.toString());
+                    logger.error("Failed to send message", e);
+                    break;
                 }
             } else {
-                try {
-                    writer.writeMessage(new Message(MessageType.LEAVE, user.getName(), ""));
-                } catch (Exception e) {
-                    clientTemp.logger.info(e.toString());
-                }
+                logger.info("Connection is closed!");
                 break;
             }
         }

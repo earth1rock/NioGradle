@@ -5,7 +5,7 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        ServerTemp server = new ServerTemp();
+        ServerTemp server = new ServerTemp(2222);
         Thread serverThread = new Thread(server);
         serverThread.start();
 
