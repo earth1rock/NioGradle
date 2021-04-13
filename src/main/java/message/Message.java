@@ -1,7 +1,7 @@
 package message;
 
 public class Message {
-    private final byte messageType;
+    private byte messageType;
     private final String userName;
     private final String message;
 
@@ -10,25 +10,26 @@ public class Message {
         this.userName = userName;
         this.message = message;
     }
-
     public byte getMessageType() {
         return messageType;
     }
-
     public String getUserName() {
         return userName;
     }
-
     public String getMessage() {
         return message;
     }
-
-    public String getFormattedMessage() {
-        return getUserName() + ": " + getMessage();
+    public void setMessageType(byte messageType) {
+        this.messageType = messageType;
     }
+
 
     @Override
     public String toString() {
-        return getMessageType() + getUserName() + getMessage();
+        return "Message{" +
+                "messageType=" + messageType +
+                ", userName='" + userName + '\'' +
+                ", message='" + message + '\'' +
+                '}';
     }
 }

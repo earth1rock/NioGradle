@@ -5,7 +5,11 @@ import server.Viewer;
 public class Validator {
 
     private static final byte MAX_LENGTH = Byte.MAX_VALUE;
-    private final static Viewer viewer = new Viewer();
+    private final Viewer viewer;
+
+    public Validator(Viewer viewer) {
+        this.viewer = viewer;
+    }
 
     public boolean validate(String name) {
         if (name.length() > 6 && name.length() <= MAX_LENGTH) {

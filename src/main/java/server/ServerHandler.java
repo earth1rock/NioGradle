@@ -1,67 +1,64 @@
 package server;
 
 import client.User;
-import codec.Codec;
-import codec.Writer;
+import codec.Session;
 import message.Message;
 import message.MessageFormatter;
 import message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 public class ServerHandler {
-    private final Codec codec = new Codec();
     private final Selector selector;
-    private final static Viewer viewer = new Viewer();
+    private final Viewer viewer;
     private final static Logger logger = LoggerFactory.getLogger(ServerHandler.class);
-    private User user;
 
-    public ServerHandler(Selector selector) {
+    public ServerHandler(Selector selector, Viewer viewer) {
         this.selector = selector;
+        this.viewer = viewer;
     }
 
-    public void doTask(SocketChannel socketChannel, Message message) throws Exception {
-        Writer writer = new Writer(socketChannel, codec);
-        String address = socketChannel.socket().getInetAddress().toString() + ":" + socketChannel.socket().getPort();
+    public void doTask(Session session, Message message) throws Exception {
 
         switch (message.getMessageType()) {
 
             case MessageType.MESSAGE:
                 echo(message);
-                String formattedMessage = MessageFormatter.formatMessage(message);
-                viewer.print(formattedMessage);
+                viewer.print(message);
                 break;
             case MessageType.WELCOME:
-                writer.writeMessage(message);
+                session.writeMessage(message);
                 break;
             case MessageType.JOIN:
-                Message registerMessage = new Message(MessageType.MESSAGE, "[SERVER]", message.getUserName() + " connected to the server");
-                echo(registerMessage);
-                user = new User(message.getUserName());
                 //todo attach to default room
-                socketChannel.keyFor(selector).attach(user);
-                formattedMessage = MessageFormatter.formatForLogs(registerMessage) + " | " + address;
+                User newUser = new User(message.getUserName());
+                session.attachUser(newUser);
+                Message joinMessage = new Message(MessageType.MESSAGE, "[SERVER]", message.getUserName() + " connected to the server");
+                echo(joinMessage);
+                String formattedMessage = MessageFormatter.formatForLogs(joinMessage);
                 logger.info(formattedMessage);
                 break;
             case MessageType.LEAVE:
-                Message msg = new Message(MessageType.MESSAGE, "[SERVER]", message.getUserName() + " disconnected from the server");
-                echo(msg);
-                socketChannel.close();
-                formattedMessage = MessageFormatter.formatForLogs(msg) + " | " + address;
+                Message leaveMessage = new Message(MessageType.LEAVE, "[SERVER]", message.getUserName() + " disconnected from the server");
+                session.writeMessage(leaveMessage);
+                session.close();
+                leaveMessage.setMessageType(MessageType.MESSAGE);
+                echo(leaveMessage);
+                formattedMessage = MessageFormatter.formatForLogs(leaveMessage);
                 logger.info(formattedMessage);
                 break;
             case MessageType.COMMAND:
-                executeCommand(message, writer);
+                executeCommand(message, session);
                 break;
         }
     }
 
-    private void executeCommand(Message message, Writer writer) {
+    //todo /join
+    private void executeCommand(Message message, Session mainSession) {
 
         String command = message.getMessage();
 
@@ -70,15 +67,14 @@ public class ServerHandler {
                 case "/list":
                     for (SelectionKey key : selector.keys()) {
                         if (key.isValid() && key.channel() instanceof SocketChannel) {
-                            user = (User) key.attachment();
-                            Message tempMessage = new Message(MessageType.MESSAGE, "[SERVER]", user.getName());
-                            writer.writeMessage(tempMessage);
+                            Session session = (Session) key.attachment();
+                            Message tempMessage = new Message(MessageType.MESSAGE, "[SERVER]", session.getUser().getName());
+                            mainSession.writeMessage(tempMessage);
                         }
                     }
                     break;
-
                 default:
-                    writer.writeMessage(new Message(MessageType.MESSAGE, "[SERVER]", "Command is not available yet"));
+                    mainSession.writeMessage(new Message(MessageType.MESSAGE, "[SERVER]", "Command is not available yet"));
                     break;
             }
         } catch (Exception e) {
@@ -86,21 +82,17 @@ public class ServerHandler {
         }
     }
 
-    private void echo(Message message) throws IOException {
-        Writer writer;
+    private void echo(Message message) {
         for (SelectionKey key : selector.keys()) {
             if (key.isValid() && key.channel() instanceof SocketChannel) {
-                SocketChannel socketChannel = (SocketChannel) key.channel();
-                writer = new Writer(socketChannel, codec);
+                Session session = (Session) key.attachment();
                 try {
-                    writer.writeMessage(message);
+                    session.writeMessage(message);
                 } catch (Exception e) {
-                    socketChannel.close();
+                    //todo session close
                     logger.error("Cannot write message", e);
                 }
             }
         }
     }
-
-
 }

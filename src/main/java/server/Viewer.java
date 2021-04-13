@@ -4,9 +4,14 @@ import message.Message;
 import message.MessageFormatter;
 
 public class Viewer {
+    private final MessageFormatter formatter;
+
+    public Viewer(MessageFormatter formatter) {
+        this.formatter = formatter;
+    }
 
     public void print(Message message) {
-        String formattedString = MessageFormatter.formatMessage(message);
+        String formattedString = formatter.formatMessage(message);
         System.out.println(formattedString);
     }
 
