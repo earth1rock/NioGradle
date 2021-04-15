@@ -11,12 +11,16 @@ public class Validator {
         this.viewer = viewer;
     }
 
-    public boolean validate(String name) {
+    public boolean validateNickname(String name) {
         if (name.length() > 6 && name.length() <= MAX_LENGTH) {
             return true;
         } else {
             viewer.print("Nickname length must be in [7;" + MAX_LENGTH + "]");
             return false;
         }
+    }
+
+    public boolean validateRoomName(String name) {
+        return name != null && name.length() > 6 && name.length() <= MAX_LENGTH;
     }
 }

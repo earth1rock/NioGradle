@@ -6,15 +6,16 @@ import message.Message;
 import message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import room.Room;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.Set;
 
 public class ServerTemp implements Runnable {
     private final Selector selector;
@@ -28,13 +29,13 @@ public class ServerTemp implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ServerTemp.class);
 
 
-    ServerTemp(int port, Codec codec, Viewer viewer) throws IOException {
+    ServerTemp(int port, Codec codec, Viewer viewer, Set<Room> rooms) throws IOException {
         this.port = port;
         this.codec = codec;
         inetSocketAddress = new InetSocketAddress(port);
         selector = Selector.open();
         serverSocketChannel = ServerSocketChannel.open();
-        serverHandler = new ServerHandler(selector, viewer);
+        serverHandler = new ServerHandler(selector, viewer, rooms);
     }
 
     public void init() throws IOException {

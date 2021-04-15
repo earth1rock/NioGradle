@@ -2,10 +2,10 @@ package codec;
 
 import client.User;
 import message.Message;
+import room.Room;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 public class Session {
@@ -38,6 +38,10 @@ public class Session {
 
     public User getUser() {
         return user;
+    }
+
+    public Room getRoom() {
+        return user.getRoom();
     }
 
     private ByteBuffer checkerForFullBuffer() {

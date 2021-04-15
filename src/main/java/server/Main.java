@@ -1,9 +1,12 @@
 package server;
 
+import client.User;
 import codec.Codec;
 import message.MessageFormatter;
+import room.Room;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Scanner;
 
 public class Main {
@@ -11,7 +14,11 @@ public class Main {
         Codec codec = new Codec();
         MessageFormatter formatter = new MessageFormatter();
         Viewer viewer = new Viewer(formatter);
-        ServerTemp server = new ServerTemp(2222, codec, viewer);
+
+        HashSet<Room> rooms = new HashSet<>();
+        rooms.add(User.getDefaultRoom());
+
+        ServerTemp server = new ServerTemp(2222, codec, viewer, rooms);
         server.init();
 
         Thread serverThread = new Thread(server);

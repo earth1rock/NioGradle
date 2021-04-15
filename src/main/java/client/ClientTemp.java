@@ -61,7 +61,7 @@ public class ClientTemp implements Runnable {
         viewer.print("Input your nickname:");
         do {
             userName = scanner.nextLine().trim();
-        } while (!validator.validate(userName));
+        } while (!validator.validateNickname(userName));
 
 
         ClientTemp clientTemp = new ClientTemp(userName, "localhost", 2222, codec, viewer);
