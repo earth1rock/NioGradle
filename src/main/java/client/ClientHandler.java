@@ -1,29 +1,24 @@
 package client;
 
-import codec.Session;
+import session.Session;
 import message.Message;
 import message.MessageType;
 import server.Viewer;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class ClientHandler {
 
-    private final Session session;
     private final User user;
     private final Viewer viewer;
 
-    public ClientHandler(Session session, Viewer viewer) {
-        this.session = session;
-        this.user = session.getUser();
-        this.viewer = viewer;
+    public ClientHandler(User user, Viewer viewer) throws NullPointerException {
+        this.user = Objects.requireNonNull(user, "User must not be null");
+        this.viewer = Objects.requireNonNull(viewer, "Viewer must not be null");
     }
 
-    public Message read() throws Exception {
-        return session.readMessage();
-    }
-
-    public void doTask(Message message) throws IOException {
+    public void doTask(Message message, Session session) throws IOException {
         switch (message.getMessageType()) {
 
             case MessageType.MESSAGE:
@@ -37,7 +32,7 @@ public class ClientHandler {
         }
     }
 
-    public void write(String message) throws Exception {
+    public void write(String message, Session session) throws Exception {
         if (message.equals("/exit")) {
             Message leaveMessage = new Message(MessageType.LEAVE, user.getName(), "");
             session.writeMessage(leaveMessage);
@@ -50,7 +45,7 @@ public class ClientHandler {
         }
     }
 
-    public void connect() throws Exception {
+    public void onConnected(Session session) throws Exception {
         Message joinMessage = new Message(MessageType.JOIN, user.getName(), "");
         session.writeMessage(joinMessage);
     }

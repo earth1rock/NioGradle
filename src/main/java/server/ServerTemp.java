@@ -1,12 +1,10 @@
 package server;
 
 import codec.Codec;
-import codec.Session;
+import session.Session;
 import message.Message;
-import message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import room.Room;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -15,7 +13,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.Objects;
 
 public class ServerTemp implements Runnable {
     private final Selector selector;
@@ -24,18 +22,16 @@ public class ServerTemp implements Runnable {
     private final ServerHandler serverHandler;
     private final Codec codec;
     private final InetSocketAddress inetSocketAddress;
-    private final static Message welcomeMessage = new Message(MessageType.WELCOME, "[SERVER]", "Welcome to NioChat!");
-    private final static Message infoMessage = new Message(MessageType.WELCOME, "[SERVER]", "If you need some help just type /help");
     private final static Logger logger = LoggerFactory.getLogger(ServerTemp.class);
 
 
-    ServerTemp(int port, Codec codec, Viewer viewer, Set<Room> rooms) throws IOException {
+    ServerTemp(int port, Codec codec, Viewer viewer) throws Exception {
         this.port = port;
-        this.codec = codec;
+        this.codec = Objects.requireNonNull(codec, "Codec must not be null");
         inetSocketAddress = new InetSocketAddress(port);
         selector = Selector.open();
         serverSocketChannel = ServerSocketChannel.open();
-        serverHandler = new ServerHandler(selector, viewer, rooms);
+        serverHandler = new ServerHandler(viewer);
     }
 
     public void init() throws IOException {
@@ -78,9 +74,8 @@ public class ServerTemp implements Runnable {
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
         socketChannel.configureBlocking(false);
         Session session = new Session(socketChannel, codec);
-        session.writeMessage(welcomeMessage);
-        session.writeMessage(infoMessage);
         socketChannel.register(selector, SelectionKey.OP_READ, session);
+        serverHandler.onSessionCreate(session);
     }
 
 
