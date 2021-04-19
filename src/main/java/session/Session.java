@@ -1,12 +1,13 @@
-package codec;
+package session;
 
 import client.User;
+import codec.Codec;
 import message.Message;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
 
 public class Session {
 
@@ -23,13 +24,10 @@ public class Session {
         this(socketChannel, codec, null);
     }
 
-    public Session(SocketChannel socketChannel, Codec codec, User user) throws Exception {
-        if ((socketChannel != null) && (codec != null)) {
-            this.socketChannel = socketChannel;
-            this.codec = codec;
-            this.user = user;
-        }
-        else throw new Exception("Failed to create session");
+    public Session(SocketChannel socketChannel, Codec codec, User user) throws NullPointerException{
+        this.socketChannel = Objects.requireNonNull(socketChannel, "SocketChannel must not be null");
+        this.codec = Objects.requireNonNull(codec, "Codec must not be null");
+        this.user = user;
     }
 
     public void attachUser(Object object) {
@@ -69,7 +67,7 @@ public class Session {
     }
 
     private ByteBuffer getRest(ByteBuffer buffer) {
-        int restBytes = buffer.capacity() - buffer.position();
+        int restBytes = buffer.remaining();
         if (restBytes != 0) {
             ByteBuffer restBuffer = ByteBuffer.allocate(restBytes);
             restBuffer.put(buffer);
@@ -99,6 +97,7 @@ public class Session {
             }
             restBuffer = getRest(byteBuffer);
             buffer_size = buffer_size_step;
+            byteBuffer.flip();
             return codec.decode(byteBuffer);
 
         } catch (Exception e) {
@@ -111,6 +110,19 @@ public class Session {
         ByteBuffer buffer = codec.encode(message);
         buffer.flip();
         return socketChannel.write(buffer);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Session session = (Session) o;
+        return Objects.equals(socketChannel, session.socketChannel);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(socketChannel);
     }
 
     public void close() throws IOException {

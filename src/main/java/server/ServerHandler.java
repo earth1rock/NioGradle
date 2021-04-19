@@ -1,25 +1,41 @@
 package server;
 
 import client.User;
-import codec.Session;
+import session.Session;
 import message.Message;
 import message.MessageFormatter;
 import message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 public class ServerHandler {
-    private final Selector selector;
     private final Viewer viewer;
     private final static Logger logger = LoggerFactory.getLogger(ServerHandler.class);
+    private final static Message welcomeMessage = new Message(MessageType.WELCOME, "[SERVER]", "Welcome to NioChat!");
+    private final static Message infoMessage = new Message(MessageType.WELCOME, "[SERVER]", "If you need some help just type /help");
+    private final Set<Session> sessionSet;
 
-    public ServerHandler(Selector selector, Viewer viewer) {
-        this.selector = selector;
-        this.viewer = viewer;
+    public ServerHandler(Viewer viewer) throws NullPointerException {
+        this.viewer = Objects.requireNonNull(viewer);
+        sessionSet = new HashSet<>();
+    }
+
+    public void onSessionCreate(Session session) throws Exception {
+        sessionSet.add(session);
+        session.writeMessage(welcomeMessage);
+        session.writeMessage(infoMessage);
+    }
+
+    public void onSessionClosed(Session session) {
+        sessionSet.remove(session);
+        Message leaveMessage = new Message(MessageType.MESSAGE, "[SERVER]", session.getUser().getName() + " disconnected from the server");
+        echo(leaveMessage);
+        String formattedMessage = MessageFormatter.formatForLogs(leaveMessage);
+        logger.info(formattedMessage);
     }
 
     public void doTask(Session session, Message message) throws Exception {
@@ -34,7 +50,6 @@ public class ServerHandler {
                 session.writeMessage(message);
                 break;
             case MessageType.JOIN:
-                //todo attach to default room
                 User newUser = new User(message.getUserName());
                 session.attachUser(newUser);
                 Message joinMessage = new Message(MessageType.MESSAGE, "[SERVER]", message.getUserName() + " connected to the server");
@@ -43,13 +58,10 @@ public class ServerHandler {
                 logger.info(formattedMessage);
                 break;
             case MessageType.LEAVE:
-                Message leaveMessage = new Message(MessageType.LEAVE, "[SERVER]", message.getUserName() + " disconnected from the server");
+                Message leaveMessage = new Message(MessageType.LEAVE, "[SERVER]", session.getUser().getName() + " disconnected from the server");
                 session.writeMessage(leaveMessage);
                 session.close();
-                leaveMessage.setMessageType(MessageType.MESSAGE);
-                echo(leaveMessage);
-                formattedMessage = MessageFormatter.formatForLogs(leaveMessage);
-                logger.info(formattedMessage);
+                onSessionClosed(session);
                 break;
             case MessageType.COMMAND:
                 executeCommand(message, session);
@@ -65,12 +77,9 @@ public class ServerHandler {
         try {
             switch (command) {
                 case "/list":
-                    for (SelectionKey key : selector.keys()) {
-                        if (key.isValid() && key.channel() instanceof SocketChannel) {
-                            Session session = (Session) key.attachment();
-                            Message tempMessage = new Message(MessageType.MESSAGE, "[SERVER]", session.getUser().getName());
-                            mainSession.writeMessage(tempMessage);
-                        }
+                    for (Session session : sessionSet) {
+                        Message tempMessage = new Message(MessageType.MESSAGE, "[SERVER]", session.getUser().getName());
+                        mainSession.writeMessage(tempMessage);
                     }
                     break;
                 default:
@@ -82,16 +91,14 @@ public class ServerHandler {
         }
     }
 
+
     private void echo(Message message) {
-        for (SelectionKey key : selector.keys()) {
-            if (key.isValid() && key.channel() instanceof SocketChannel) {
-                Session session = (Session) key.attachment();
-                try {
-                    session.writeMessage(message);
-                } catch (Exception e) {
-                    //todo session close
-                    logger.error("Cannot write message", e);
-                }
+
+        for (Session session : sessionSet) {
+            try {
+                session.writeMessage(message);
+            } catch (Exception e) {
+                logger.error("Cannot write message", e);
             }
         }
     }

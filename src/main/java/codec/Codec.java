@@ -13,15 +13,17 @@ public class Codec {
 
     public ByteBuffer encode(Message message) throws Exception {
 
-        int bytesLength = message.getMessage().getBytes(StandardCharsets.UTF_8).length;
+        byte[] messageBytes = message.getMessage().getBytes(StandardCharsets.UTF_8);
+        byte[] userNameBytes = message.getUserName().getBytes(StandardCharsets.UTF_8);
+        int bytesLength = messageBytes.length;
         if (bytesLength <= MAX_LENGTH) {
             byte messageType = message.getMessageType();
             byte userNameLength = (byte) message.getUserName().length();
             short messageLength = (short) message.getMessage().length();
 
             int fullSizeMessage = HEADER_SIZE +
-                    message.getUserName().getBytes(StandardCharsets.UTF_8).length +
-                    message.getMessage().getBytes(StandardCharsets.UTF_8).length;
+                    userNameBytes.length +
+                    bytesLength;
 
             ByteBuffer messageBuffer = ByteBuffer.allocate(fullSizeMessage);
 
@@ -30,8 +32,8 @@ public class Codec {
             messageBuffer.put(messageType);
             messageBuffer.put(userNameLength);
             messageBuffer.putShort(messageLength);
-            messageBuffer.put(message.getUserName().getBytes(StandardCharsets.UTF_8));
-            messageBuffer.put(message.getMessage().getBytes(StandardCharsets.UTF_8));
+            messageBuffer.put(userNameBytes);
+            messageBuffer.put(messageBytes);
 
             return messageBuffer;
         } else {
@@ -54,7 +56,6 @@ public class Codec {
 
     //[int,byte,byte,short,text]
     public Message decode(ByteBuffer buffer) {
-        buffer.flip();
         int fullSizeLength = buffer.getInt();
         byte messageType = buffer.get();
         byte userNameLength = buffer.get();

@@ -3,11 +3,10 @@ package server;
 import codec.Codec;
 import message.MessageFormatter;
 
-import java.io.IOException;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
         Codec codec = new Codec();
         MessageFormatter formatter = new MessageFormatter();
         Viewer viewer = new Viewer(formatter);

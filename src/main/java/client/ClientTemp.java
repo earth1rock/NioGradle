@@ -1,7 +1,7 @@
 package client;
 
 import codec.Codec;
-import codec.Session;
+import session.Session;
 import message.Message;
 import message.MessageFormatter;
 import org.slf4j.Logger;
@@ -15,14 +15,14 @@ public class ClientTemp implements Runnable {
 
     private final static Logger logger = LoggerFactory.getLogger(ClientTemp.class);
     private final ClientHandler clientHandler;
-
+    private final Session session;
 
     ClientTemp(String name, String hostname, int port, Codec codec, Viewer viewer) throws Exception {
         InetSocketAddress inetSocketAddress = new InetSocketAddress(hostname, port);
         User user = new User(name);
         SocketChannel socketChannel = SocketChannel.open(inetSocketAddress);
-        Session session = new Session(socketChannel, codec, user);
-        clientHandler = new ClientHandler(session, viewer);
+        this.session = new Session(socketChannel, codec, user);
+        clientHandler = new ClientHandler(user, viewer);
     }
 
     public ClientHandler getHandler() {
@@ -33,15 +33,15 @@ public class ClientTemp implements Runnable {
     public void run() {
 
         try {
-            clientHandler.connect();
+            clientHandler.onConnected(session);
         } catch (Exception e) {
             logger.error("Failed to connect to server", e);
             return;
         }
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                Message result = clientHandler.read();
-                clientHandler.doTask(result);
+                Message result = session.readMessage();
+                clientHandler.doTask(result, session);
             } catch (Exception e) {
                 logger.error("Failed to read message. Probably connection is lost", e);
                 break;
@@ -68,11 +68,12 @@ public class ClientTemp implements Runnable {
         Thread clientThread = new Thread(clientTemp);
         clientThread.start();
         ClientHandler clientHandler = clientTemp.getHandler();
+        Session session = clientTemp.session;
 
         while (!Thread.currentThread().isInterrupted()) {
             String message = scanner.nextLine();
             try {
-                clientHandler.write(message);
+                clientHandler.write(message, session);
             } catch (Exception e) {
                 logger.error("Failed to send message", e);
                 break;

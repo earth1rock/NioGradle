@@ -3,11 +3,13 @@ package server;
 import message.Message;
 import message.MessageFormatter;
 
+import java.util.Objects;
+
 public class Viewer {
     private final MessageFormatter formatter;
 
     public Viewer(MessageFormatter formatter) {
-        this.formatter = formatter;
+        this.formatter = Objects.requireNonNull(formatter, "Formatter must not be null");
     }
 
     public void print(Message message) {
