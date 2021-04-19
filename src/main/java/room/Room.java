@@ -2,6 +2,7 @@ package room;
 
 import client.User;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class Room {
@@ -10,7 +11,7 @@ public class Room {
     private final Set<User> users;
 
     public Room(String name) {
-        this.name = name;
+        this.name = Objects.requireNonNull(name, "Name must not be null");
         this.users = new HashSet<>();
     }
 
@@ -30,6 +31,19 @@ public class Room {
     public Room removeUser(User user) {
         users.remove(user);
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Room room = (Room) o;
+        return Objects.equals(name, room.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 
     @Override

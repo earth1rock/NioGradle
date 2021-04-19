@@ -23,4 +23,12 @@ public class Validator {
     public boolean validateRoomName(String name) {
         return name != null && name.length() > 6 && name.length() <= MAX_LENGTH;
     }
+
+    public boolean validateCommand(String[] commands) {
+        if (commands.length != 2) {
+            return false;
+        }
+        String nameOfRoom = commands[1];
+        return validateRoomName(nameOfRoom);
+    }
 }

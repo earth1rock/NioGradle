@@ -2,16 +2,15 @@ package client;
 
 import room.Room;
 
+import java.util.Objects;
+
 public class User {
 
     private final String name;
-    private final static Room DEFAULT_ROOM = new Room("DEFAULT");
     private Room room;
 
     public User(String name) {
         this.name = name;
-        this.room = DEFAULT_ROOM;
-        DEFAULT_ROOM.addUser(this);
     }
 
     public String getName() {
@@ -22,11 +21,20 @@ public class User {
         return room;
     }
 
-    public static Room getDefaultRoom() {
-        return DEFAULT_ROOM;
-    }
-
     public void setRoom(Room room) {
         this.room = room;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(name, user.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 }
