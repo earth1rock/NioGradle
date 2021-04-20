@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ServerHandler {
     private final Viewer viewer;
@@ -77,10 +78,9 @@ public class ServerHandler {
         try {
             switch (command) {
                 case "/list":
-                    for (Session session : sessionSet) {
-                        Message tempMessage = new Message(MessageType.MESSAGE, "[SERVER]", session.getUser().getName());
-                        mainSession.writeMessage(tempMessage);
-                    }
+                    String listUsersMessage = sessionSet.stream().map(session -> session.getUser().getName()).collect(Collectors.joining("\n"));
+                    Message tempMessage = new Message(MessageType.MESSAGE, "[SERVER]", "List of users:\n" + listUsersMessage);
+                    mainSession.writeMessage(tempMessage);
                     break;
                 default:
                     mainSession.writeMessage(new Message(MessageType.MESSAGE, "[SERVER]", "Command is not available yet"));

@@ -1,12 +1,14 @@
 package client;
 
 import codec.Codec;
+import message.MessageType;
 import session.Session;
 import message.Message;
 import message.MessageFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.Viewer;
+
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
@@ -17,16 +19,11 @@ public class ClientTemp implements Runnable {
     private final ClientHandler clientHandler;
     private final Session session;
 
-    ClientTemp(String name, String hostname, int port, Codec codec, Viewer viewer) throws Exception {
+    ClientTemp(User user, String hostname, int port, Codec codec, ClientHandler clientHandler) throws Exception {
         InetSocketAddress inetSocketAddress = new InetSocketAddress(hostname, port);
-        User user = new User(name);
         SocketChannel socketChannel = SocketChannel.open(inetSocketAddress);
         this.session = new Session(socketChannel, codec, user);
-        clientHandler = new ClientHandler(user, viewer);
-    }
-
-    public ClientHandler getHandler() {
-        return clientHandler;
+        this.clientHandler = clientHandler;
     }
 
     @Override
@@ -41,7 +38,7 @@ public class ClientTemp implements Runnable {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 Message result = session.readMessage();
-                clientHandler.doTask(result, session);
+                clientHandler.doTask(session, result);
             } catch (Exception e) {
                 logger.error("Failed to read message. Probably connection is lost", e);
                 break;
@@ -63,17 +60,20 @@ public class ClientTemp implements Runnable {
             userName = scanner.nextLine().trim();
         } while (!validator.validate(userName));
 
+        User user = new User(userName);
+        ClientHandler clientHandler = new ClientHandler(user, viewer);
 
-        ClientTemp clientTemp = new ClientTemp(userName, "localhost", 2222, codec, viewer);
+        ClientTemp clientTemp = new ClientTemp(user, "localhost", 2222, codec, clientHandler);
         Thread clientThread = new Thread(clientTemp);
         clientThread.start();
-        ClientHandler clientHandler = clientTemp.getHandler();
         Session session = clientTemp.session;
+
 
         while (!Thread.currentThread().isInterrupted()) {
             String message = scanner.nextLine();
             try {
-                clientHandler.write(message, session);
+                Message generatedMessage = clientHandler.generateMessage(user, message);
+                session.writeMessage(generatedMessage);
             } catch (Exception e) {
                 logger.error("Failed to send message", e);
                 break;

@@ -10,7 +10,8 @@ public class Main {
         Codec codec = new Codec();
         MessageFormatter formatter = new MessageFormatter();
         Viewer viewer = new Viewer(formatter);
-        ServerTemp server = new ServerTemp(2222, codec, viewer);
+        ServerHandler serverHandler = new ServerHandler(viewer);
+        ServerTemp server = new ServerTemp(2222, codec, serverHandler);
         server.init();
 
         Thread serverThread = new Thread(server);

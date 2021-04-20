@@ -18,7 +18,7 @@ public class ClientHandler {
         this.viewer = Objects.requireNonNull(viewer, "Viewer must not be null");
     }
 
-    public void doTask(Message message, Session session) throws IOException {
+    public void doTask(Session session, Message message) throws IOException {
         switch (message.getMessageType()) {
 
             case MessageType.MESSAGE:
@@ -32,16 +32,13 @@ public class ClientHandler {
         }
     }
 
-    public void write(String message, Session session) throws Exception {
+    public Message generateMessage(User user, String message) {
         if (message.equals("/exit")) {
-            Message leaveMessage = new Message(MessageType.LEAVE, user.getName(), "");
-            session.writeMessage(leaveMessage);
+            return new Message(MessageType.LEAVE, user.getName(), "");
         } else if (message.startsWith("/")) {
-            Message commandMessage = new Message(MessageType.COMMAND, user.getName(), message);
-            session.writeMessage(commandMessage);
+            return new Message(MessageType.COMMAND, user.getName(), message);
         } else {
-            Message messageObj = new Message(MessageType.MESSAGE, user.getName(), message);
-            session.writeMessage(messageObj);
+            return new Message(MessageType.MESSAGE, user.getName(), message);
         }
     }
 
