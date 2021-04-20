@@ -25,13 +25,13 @@ public class ServerTemp implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ServerTemp.class);
 
 
-    ServerTemp(int port, Codec codec, Viewer viewer) throws Exception {
+    ServerTemp(int port, Codec codec, ServerHandler serverHandler) throws Exception {
         this.port = port;
         this.codec = Objects.requireNonNull(codec, "Codec must not be null");
         inetSocketAddress = new InetSocketAddress(port);
         selector = Selector.open();
         serverSocketChannel = ServerSocketChannel.open();
-        serverHandler = new ServerHandler(viewer);
+        this.serverHandler = serverHandler;
     }
 
     public void init() throws IOException {

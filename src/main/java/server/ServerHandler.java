@@ -83,6 +83,7 @@ public class ServerHandler {
         }
     }
 
+    //todo /join
     private void executeCommand(Message message, Session mainSession) {
 
         String editedMsg = message.getMessage().trim().replaceAll("\\s+", " ");
@@ -124,6 +125,7 @@ public class ServerHandler {
             logger.error("Failed to execute command", e);
         }
     }
+
 
     private void echo(Message message) {
 
