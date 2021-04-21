@@ -5,21 +5,19 @@ import message.MessageType;
 import room.Room;
 import session.Session;
 
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CommandRooms implements Command {
     private final Set<Room> rooms;
 
     public CommandRooms(Set<Room> rooms) {
-        this.rooms = rooms;
+        this.rooms = Objects.requireNonNull(rooms, "Set of rooms is null");
     }
 
     private String getRooms() {
-        StringBuilder result = new StringBuilder();
-        for (Room room : rooms) {
-            result.append(room.toString()).append("\n");
-        }
-        return result.substring(0, result.length() - 1);
+        return "List of rooms:\n" + rooms.stream().map(Room::toString).collect(Collectors.joining("\n"));
     }
 
     @Override

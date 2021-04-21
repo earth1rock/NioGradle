@@ -8,11 +8,10 @@ import java.util.Set;
 public class Room {
 
     private final String name;
-    private final Set<User> users;
+    private final Set<User> users = new HashSet<>();
 
     public Room(String name) {
         this.name = Objects.requireNonNull(name, "Name must not be null");
-        this.users = new HashSet<>();
     }
 
     public Set<User> getUsers() {

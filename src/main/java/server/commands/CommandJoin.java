@@ -7,6 +7,7 @@ import message.MessageType;
 import room.Room;
 import session.Session;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class CommandJoin implements Command {
@@ -16,9 +17,9 @@ public class CommandJoin implements Command {
     private final Set<Room> rooms;
 
     public CommandJoin(Validator validator, String[] commands, Set<Room> rooms) {
-        this.validator = validator;
-        this.commands = commands;
-        this.rooms = rooms;
+        this.validator = Objects.requireNonNull(validator, "Validator is null");
+        this.commands = Objects.requireNonNull(commands, "Commands are null");
+        this.rooms = Objects.requireNonNull(rooms, "Set of rooms is null");
     }
 
     private Room roomIsExist(String nameOfRoom) {

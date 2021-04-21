@@ -1,7 +1,6 @@
 package client;
 
 import codec.Codec;
-import message.MessageType;
 import session.Session;
 import message.Message;
 import message.MessageFormatter;
