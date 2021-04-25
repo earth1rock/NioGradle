@@ -10,6 +10,7 @@ import server.Viewer;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class ClientTemp implements Runnable {
@@ -22,7 +23,7 @@ public class ClientTemp implements Runnable {
         InetSocketAddress inetSocketAddress = new InetSocketAddress(hostname, port);
         SocketChannel socketChannel = SocketChannel.open(inetSocketAddress);
         this.session = new Session(socketChannel, codec, user);
-        this.clientHandler = clientHandler;
+        this.clientHandler = Objects.requireNonNull(clientHandler);
     }
 
     @Override
@@ -71,7 +72,7 @@ public class ClientTemp implements Runnable {
         while (!Thread.currentThread().isInterrupted()) {
             String message = scanner.nextLine();
             try {
-                Message generatedMessage = clientHandler.generateMessage(user, message);
+                Message generatedMessage = ClientUtil.generateMessage(user, message);
                 session.writeMessage(generatedMessage);
             } catch (Exception e) {
                 logger.error("Failed to send message", e);

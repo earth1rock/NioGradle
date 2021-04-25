@@ -12,13 +12,12 @@ import java.util.Set;
 
 public class CommandJoin implements Command {
 
-    private final Validator validator;
-    private final String[] commands;
+
+    private final String nameOfRoom;
     private final Set<Room> rooms;
 
-    public CommandJoin(Validator validator, String[] commands, Set<Room> rooms) {
-        this.validator = Objects.requireNonNull(validator, "Validator is null");
-        this.commands = Objects.requireNonNull(commands, "Commands are null");
+    public CommandJoin(String nameOfRoom, Set<Room> rooms) {
+        this.nameOfRoom = Objects.requireNonNull(nameOfRoom, "Commands are null");
         this.rooms = Objects.requireNonNull(rooms, "Set of rooms is null");
     }
 
@@ -33,12 +32,7 @@ public class CommandJoin implements Command {
 
     @Override
     public void execute(Session session) throws Exception {
-        if (!validator.validateCommand(commands)) {
-            Message errorMessage = new Message(MessageType.MESSAGE, "[SERVER]", "Failed to join to room! Type '/help' for more information");
-            session.writeMessage(errorMessage);
-            return;
-        }
-        String nameOfRoom = commands[1];
+
         Room targetRoom = roomIsExist(nameOfRoom);
         if (targetRoom == null) {
             Message roomNotExist = new Message(MessageType.MESSAGE, "[SERVER]", nameOfRoom + " room is not exist");

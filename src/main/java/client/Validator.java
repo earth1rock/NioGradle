@@ -20,15 +20,7 @@ public class Validator {
         }
     }
 
-    public boolean validateRoomName(String name) {
-        return name != null && name.length() > 6 && name.length() <= MAX_LENGTH;
-    }
-
-    public boolean validateCommand(String[] commands) {
-        if (commands.length != 2) {
-            return false;
-        }
-        String nameOfRoom = commands[1];
-        return validateRoomName(nameOfRoom);
+    public boolean validateRoomName(String nameOfRoom) {
+        return nameOfRoom != null && nameOfRoom.length() > 6 && nameOfRoom.length() <= MAX_LENGTH;
     }
 }

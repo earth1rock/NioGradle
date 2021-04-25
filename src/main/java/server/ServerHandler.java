@@ -6,6 +6,7 @@ import room.Room;
 import server.commands.Command;
 import server.commands.CommandCreateRoom;
 import server.commands.CommandDefault;
+import server.commands.CommandErrorSyntax;
 import server.commands.CommandHelp;
 import server.commands.CommandJoin;
 import server.commands.CommandList;
@@ -18,8 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 public class ServerHandler {
     private final Viewer viewer;
@@ -30,13 +33,44 @@ public class ServerHandler {
     private final Set<Room> rooms;
     private final Validator validator;
     private final Room DEFAULT_ROOM = new Room("DEFAULT");
+    private final static Function<String, Command> DEFAULT_COMMAND = cmds -> new CommandDefault();
+    private final Map<String, Function<String, Command>> commandsFactory;
 
-    public ServerHandler(Viewer viewer) throws NullPointerException {
+
+    public ServerHandler(Viewer viewer) {
         this.viewer = Objects.requireNonNull(viewer);
         sessionSet = new HashSet<>();
         rooms = new HashSet<>();
         rooms.add(DEFAULT_ROOM);
         validator = new Validator(viewer);
+
+        commandsFactory = Map.of(
+                "/list", cmds -> cmds.split(" ").length == 1 ? new CommandList(sessionSet) : new CommandErrorSyntax(),
+                "/help", cmds -> cmds.split(" ").length == 1 ? new CommandHelp() : new CommandErrorSyntax(),
+                "/rooms", cmds -> cmds.split(" ").length == 1 ? new CommandRooms(rooms) : new CommandErrorSyntax(),
+                "/join", cmds -> {
+                    String[] strings = cmds.split(" ");
+                    if (strings.length != 2) {
+                        return new CommandErrorSyntax();
+                    }
+                    String nameOfRoom = strings[1];
+                    if (!validator.validateRoomName(nameOfRoom)) {
+                        return new CommandErrorSyntax();
+                    }
+                    return new CommandJoin(nameOfRoom, rooms);
+                },
+                "/createroom", cmds -> {
+                    String[] strings = cmds.split(" ");
+                    if (strings.length != 2) {
+                        return new CommandErrorSyntax();
+                    }
+                    String nameOfRoom = strings[1];
+                    if (!validator.validateRoomName(nameOfRoom)) {
+                        return new CommandErrorSyntax();
+                    }
+                    return new CommandCreateRoom(nameOfRoom, rooms);
+                }
+        );
     }
 
     public void onSessionCreate(Session session) throws Exception {
@@ -88,42 +122,15 @@ public class ServerHandler {
                 break;
         }
     }
-    
+
     private void executeCommand(Message message, Session mainSession) {
 
         String editedMsg = message.getMessage().trim().replaceAll("\\s+", " ");
-        String[] commands = editedMsg.split(" ", 2);
-        String command = commands[0];
-        Command commandToExecute;
-
+        String nameOfCommand = editedMsg.split(" ")[0];
         try {
-            switch (command) {
-                case "/list":
-                    commandToExecute = new CommandList(sessionSet);
-                    break;
-
-                case "/help":
-                    commandToExecute = new CommandHelp();
-                    break;
-
-                case "/rooms":
-                    commandToExecute = new CommandRooms(rooms);
-                    break;
-
-                case "/createroom":
-                    commandToExecute = new CommandCreateRoom(validator, commands, rooms);
-                    break;
-
-                case "/join":
-                    commandToExecute = new CommandJoin(validator, commands, rooms);
-                    break;
-
-                default:
-                    commandToExecute = new CommandDefault();
-                    break;
-            }
-            commandToExecute.execute(mainSession);
-
+            Function<String, Command> factory = commandsFactory.getOrDefault(nameOfCommand, DEFAULT_COMMAND);
+            Command cmd = factory.apply(editedMsg);
+            cmd.execute(mainSession);
         } catch (Exception e) {
             logger.error("Failed to execute command", e);
         }

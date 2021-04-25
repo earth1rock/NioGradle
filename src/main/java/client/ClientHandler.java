@@ -13,7 +13,7 @@ public class ClientHandler {
     private final User user;
     private final Viewer viewer;
 
-    public ClientHandler(User user, Viewer viewer) throws NullPointerException {
+    public ClientHandler(User user, Viewer viewer) {
         this.user = Objects.requireNonNull(user, "User must not be null");
         this.viewer = Objects.requireNonNull(viewer, "Viewer must not be null");
     }
@@ -29,16 +29,6 @@ public class ClientHandler {
             case MessageType.LEAVE:
                 session.close();
                 viewer.print(message);
-        }
-    }
-
-    public Message generateMessage(User user, String message) {
-        if (message.equals("/exit")) {
-            return new Message(MessageType.LEAVE, user.getName(), "");
-        } else if (message.startsWith("/")) {
-            return new Message(MessageType.COMMAND, user.getName(), message);
-        } else {
-            return new Message(MessageType.MESSAGE, user.getName(), message);
         }
     }
 
