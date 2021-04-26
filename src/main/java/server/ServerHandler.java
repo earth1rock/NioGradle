@@ -20,7 +20,7 @@ public class ServerHandler {
     private final static Message infoMessage = new Message(MessageType.WELCOME, "[SERVER]", "If you need some help just type /help");
     private final Set<Session> sessionSet;
 
-    public ServerHandler(Viewer viewer) throws NullPointerException {
+    public ServerHandler(Viewer viewer) {
         this.viewer = Objects.requireNonNull(viewer);
         sessionSet = new HashSet<>();
     }

@@ -2,13 +2,15 @@ package client;
 
 import server.Viewer;
 
+import java.util.Objects;
+
 public class Validator {
 
     private static final byte MAX_LENGTH = Byte.MAX_VALUE;
     private final Viewer viewer;
 
     public Validator(Viewer viewer) {
-        this.viewer = viewer;
+        this.viewer = Objects.requireNonNull(viewer, "Viewer must not be null");
     }
 
     public boolean validate(String name) {

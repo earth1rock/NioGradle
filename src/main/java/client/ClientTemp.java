@@ -1,7 +1,6 @@
 package client;
 
 import codec.Codec;
-import message.MessageType;
 import session.Session;
 import message.Message;
 import message.MessageFormatter;
@@ -11,6 +10,7 @@ import server.Viewer;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class ClientTemp implements Runnable {
@@ -23,7 +23,7 @@ public class ClientTemp implements Runnable {
         InetSocketAddress inetSocketAddress = new InetSocketAddress(hostname, port);
         SocketChannel socketChannel = SocketChannel.open(inetSocketAddress);
         this.session = new Session(socketChannel, codec, user);
-        this.clientHandler = clientHandler;
+        this.clientHandler = Objects.requireNonNull(clientHandler, "ClientHandler must not be null");
     }
 
     @Override
@@ -49,7 +49,7 @@ public class ClientTemp implements Runnable {
     public static void main(String[] args) throws Exception {
         Scanner scanner = new Scanner(System.in);
 
-        String userName = "";
+        String userName;
         Codec codec = new Codec();
         MessageFormatter formatter = new MessageFormatter();
         Viewer viewer = new Viewer(formatter);
@@ -75,6 +75,10 @@ public class ClientTemp implements Runnable {
                 Message generatedMessage = clientHandler.generateMessage(user, message);
                 session.writeMessage(generatedMessage);
             } catch (Exception e) {
+                if (e instanceof IndexOutOfBoundsException) {
+                    logger.error("Failed to send message", e);
+                    continue;
+                }
                 logger.error("Failed to send message", e);
                 break;
             }
