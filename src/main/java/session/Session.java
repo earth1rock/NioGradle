@@ -21,11 +21,11 @@ public class Session {
     private ByteBuffer restBuffer;
 
 
-    public Session(SocketChannel socketChannel, Codec codec) throws Exception {
+    public Session(SocketChannel socketChannel, Codec codec) {
         this(socketChannel, codec, null);
     }
 
-    public Session(SocketChannel socketChannel, Codec codec, User user) throws NullPointerException{
+    public Session(SocketChannel socketChannel, Codec codec, User user) {
         this.socketChannel = Objects.requireNonNull(socketChannel, "SocketChannel must not be null");
         this.codec = Objects.requireNonNull(codec, "Codec must not be null");
         this.user = user;
@@ -43,39 +43,15 @@ public class Session {
         return user.getRoom();
     }
 
-    private ByteBuffer checkerForFullBuffer() {
-        try {
-            if (restBuffer != null) {
-                restBuffer.clear();
-                ByteBuffer checker = ByteBuffer.allocate(buffer_size);
-                checker.put(restBuffer);
-                socketChannel.read(checker);
-
-                try {
-                    if (checker.rewind().getInt() == 0) {
-                        checker.position(restBuffer.capacity());
-                        restBuffer = null;
-                    } else {
-                        checker.rewind();
-                    }
-                } catch (Exception e) {
-                    checker.position(restBuffer.capacity());
-                    restBuffer = null;
-                    return checker;
-                }
-                return checker;
-            }
-        } catch (Exception e) {
-            return null;
-        }
-        return null;
-    }
-
     private ByteBuffer getRest(ByteBuffer buffer) {
+        int oldLimPos = buffer.limit();
+        buffer.limit(buffer.capacity());
         int restBytes = buffer.remaining();
         if (restBytes != 0) {
             ByteBuffer restBuffer = ByteBuffer.allocate(restBytes);
             restBuffer.put(buffer);
+            buffer.limit(oldLimPos);
+            restBuffer.flip();
             return restBuffer;
         }
         return null;
@@ -84,23 +60,23 @@ public class Session {
     public Message readMessage() throws Exception {
         try {
             ByteBuffer byteBuffer = ByteBuffer.allocate(buffer_size);
-            ByteBuffer tempBuffer = checkerForFullBuffer();
-            if (tempBuffer != null) {
-                byteBuffer.put(tempBuffer);
+            if (restBuffer != null) {
+                byteBuffer.put(restBuffer);
             }
 
-            socketChannel.read(byteBuffer);
-            byteBuffer.flip();
+            int bytesRead = socketChannel.read(byteBuffer);
+            checkBytesRead(bytesRead);
 
             while (!codec.canDecode(byteBuffer)) {
-                byteBuffer.rewind();
                 ByteBuffer temp = byteBuffer.duplicate();
                 buffer_size += buffer_size_step;
                 byteBuffer = ByteBuffer.allocate(buffer_size);
                 byteBuffer.put(temp);
-                socketChannel.read(byteBuffer);
+                bytesRead = socketChannel.read(byteBuffer);
+                checkBytesRead(bytesRead);
             }
-            restBuffer = getRest(byteBuffer);
+
+            restBuffer = (bytesRead == buffer_size_step) ? getRest(byteBuffer) : null;
             buffer_size = buffer_size_step;
             byteBuffer.flip();
             return codec.decode(byteBuffer);
@@ -108,6 +84,13 @@ public class Session {
         } catch (Exception e) {
             socketChannel.close();
             throw e;
+        }
+    }
+
+    private void checkBytesRead(int bytesRead) throws Exception {
+        if (bytesRead == -1) {
+            socketChannel.close();
+            throw new Exception("Channel has reached end-of-stream");
         }
     }
 

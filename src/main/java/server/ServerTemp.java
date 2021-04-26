@@ -31,7 +31,7 @@ public class ServerTemp implements Runnable {
         inetSocketAddress = new InetSocketAddress(port);
         selector = Selector.open();
         serverSocketChannel = ServerSocketChannel.open();
-        this.serverHandler = Objects.requireNonNull(serverHandler);
+        this.serverHandler = Objects.requireNonNull(serverHandler, "ServerHandler must not be null");
     }
 
     public void init() throws IOException {

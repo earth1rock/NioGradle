@@ -36,7 +36,6 @@ public class ServerHandler {
     private final static Function<String, Command> DEFAULT_COMMAND = cmds -> new CommandDefault();
     private final Map<String, Function<String, Command>> commandsFactory;
 
-
     public ServerHandler(Viewer viewer) {
         this.viewer = Objects.requireNonNull(viewer);
         sessionSet = new HashSet<>();

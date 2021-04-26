@@ -11,7 +11,7 @@ public class Codec {
 
     private static final short MAX_LENGTH = Short.MAX_VALUE;
 
-    public ByteBuffer encode(Message message) throws Exception {
+    public ByteBuffer encode(Message message) {
 
         byte[] messageBytes = message.getMessage().getBytes(StandardCharsets.UTF_8);
         byte[] userNameBytes = message.getUserName().getBytes(StandardCharsets.UTF_8);
@@ -37,21 +37,22 @@ public class Codec {
 
             return messageBuffer;
         } else {
-            throw new Exception("Max message size = " + MAX_LENGTH + " | Your message size is " + message.getMessage().length());
+            throw new IndexOutOfBoundsException("Max message size = " + MAX_LENGTH + " | Your message size is " + message.getMessage().length());
         }
     }
 
     public boolean canDecode(ByteBuffer buffer) {
-        try {
-            buffer.rewind();
-            int fullSizeMessage = buffer.getInt();
-            byte[] tempBytes = new byte[fullSizeMessage];
-            buffer.rewind();
-            buffer.get(tempBytes);
-            return true;
-        } catch (Exception e) {
+        buffer.flip();
+        if (buffer.remaining() < 4) {
             return false;
         }
+        int fullSizeMessage = buffer.getInt();
+        buffer.rewind();
+        if (fullSizeMessage < 1 || fullSizeMessage > buffer.limit()) {
+            return false;
+        }
+        buffer.position(fullSizeMessage);
+        return true;
     }
 
     //[int,byte,byte,short,text]
