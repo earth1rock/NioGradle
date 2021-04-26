@@ -18,11 +18,11 @@ public class Codec {
         int bytesLength = messageBytes.length;
         if (bytesLength <= MAX_LENGTH) {
             byte messageType = message.getMessageType();
-            byte userNameLength = (byte) message.getUserName().length();
-            short messageLength = (short) message.getMessage().length();
+            byte userNameLength = (byte) userNameBytes.length;
+            short messageLength = (short) bytesLength;
 
             int fullSizeMessage = HEADER_SIZE +
-                    userNameBytes.length +
+                    userNameLength +
                     bytesLength;
 
             ByteBuffer messageBuffer = ByteBuffer.allocate(fullSizeMessage);
@@ -42,7 +42,6 @@ public class Codec {
     }
 
     public boolean canDecode(ByteBuffer buffer) {
-        buffer.flip();
         if (buffer.remaining() < 4) {
             return false;
         }
