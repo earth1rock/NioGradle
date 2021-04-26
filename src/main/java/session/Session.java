@@ -61,6 +61,7 @@ public class Session {
 
             int bytesRead = socketChannel.read(byteBuffer);
             checkBytesRead(bytesRead);
+            byteBuffer.flip();
 
             while (!codec.canDecode(byteBuffer)) {
                 ByteBuffer temp = byteBuffer.duplicate();
@@ -69,6 +70,7 @@ public class Session {
                 byteBuffer.put(temp);
                 bytesRead = socketChannel.read(byteBuffer);
                 checkBytesRead(bytesRead);
+                byteBuffer.flip();
             }
 
             restBuffer = (bytesRead == buffer_size_step) ? getRest(byteBuffer) : null;
