@@ -37,7 +37,7 @@ public class Codec {
 
             return messageBuffer;
         } else {
-            throw new IndexOutOfBoundsException("Max message size = " + MAX_LENGTH + " | Your message size is " + message.getMessage().length());
+            throw new IllegalArgumentException("Max message size = " + MAX_LENGTH + " | Your message size is " + message.getMessage().length());
         }
     }
 
