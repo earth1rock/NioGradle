@@ -7,14 +7,15 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class CodecTest {
 
-    static Message tempMessage;
-    static Codec codec;
-    static ByteBuffer expected;
+    private static Message tempMessage;
+    private static Codec codec;
+    private static ByteBuffer expected;
 
     @BeforeAll
     static void init() {
@@ -46,11 +47,8 @@ class CodecTest {
         ByteBuffer actual = codec.encode(tempMessage);
         assertEquals(expected, actual);
 
-        byte[] expectedBytes = new byte[expected.capacity()];
-        expected.flip().get(expectedBytes);
-        byte[] actualBytes = new byte[actual.capacity()];
-        actual.flip().get(actualBytes);
-
-        assertArrayEquals(expectedBytes, actualBytes);
+        if (expected.hasArray() && actual.hasArray()) {
+            assertArrayEquals(expected.array(), actual.array());
+        }
     }
 }

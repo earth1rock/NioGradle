@@ -13,10 +13,10 @@ import static org.mockito.Mockito.*;
 
 class SessionTest {
 
-    Codec codec = mock(Codec.class);
-    SocketChannel socketChannel = mock(SocketChannel.class);
-    Session session = new Session(socketChannel, codec);
-    Message tempMessage = new Message(MessageType.MESSAGE, "user", "hello");
+    private static final Codec codec = mock(Codec.class);
+    private static final SocketChannel socketChannel = mock(SocketChannel.class);
+    private static final Session session = new Session(socketChannel, codec);
+    private static final Message tempMessage = new Message(MessageType.MESSAGE, "user", "hello");
 
 
     @Test

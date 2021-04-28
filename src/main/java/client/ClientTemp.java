@@ -76,7 +76,7 @@ public class ClientTemp implements Runnable {
                 Message generatedMessage = ClientUtil.generateMessage(user, message);
                 session.writeMessage(generatedMessage);
             } catch (Exception e) {
-                if (e instanceof IndexOutOfBoundsException) {
+                if (e instanceof IllegalArgumentException) {
                     logger.error("Failed to send message", e);
                     continue;
                 }

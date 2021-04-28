@@ -44,13 +44,10 @@ public class Session {
     }
 
     private ByteBuffer getRest(ByteBuffer buffer) {
-        int oldLimPos = buffer.limit();
-        buffer.limit(buffer.capacity());
         int restBytes = buffer.remaining();
         if (restBytes != 0) {
             ByteBuffer restBuffer = ByteBuffer.allocate(restBytes);
             restBuffer.put(buffer);
-            buffer.limit(oldLimPos);
             restBuffer.flip();
             return restBuffer;
         }
