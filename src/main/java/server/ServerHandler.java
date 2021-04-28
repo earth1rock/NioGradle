@@ -33,8 +33,8 @@ public class ServerHandler {
     private final Set<Room> rooms;
     private final Validator validator;
     private final Room DEFAULT_ROOM = new Room("DEFAULT");
-    private final static Function<String, Command> DEFAULT_COMMAND = cmds -> new CommandDefault();
-    private final Map<String, Function<String, Command>> commandsFactory;
+    private final static Function<String[], Object> DEFAULT_COMMAND = args -> new CommandDefault();
+    private final Map<String, Function<String[], Object>> commandsFactory;
 
     public ServerHandler(Viewer viewer) {
         this.viewer = Objects.requireNonNull(viewer);
@@ -44,29 +44,19 @@ public class ServerHandler {
         validator = new Validator(viewer);
 
         commandsFactory = Map.of(
-                "/list", cmds -> cmds.split(" ").length == 1 ? new CommandList(sessionSet) : new CommandErrorSyntax(),
-                "/help", cmds -> cmds.split(" ").length == 1 ? new CommandHelp() : new CommandErrorSyntax(),
-                "/rooms", cmds -> cmds.split(" ").length == 1 ? new CommandRooms(rooms) : new CommandErrorSyntax(),
-                "/join", cmds -> {
-                    String[] strings = cmds.split(" ");
-                    if (strings.length != 2) {
-                        return new CommandErrorSyntax();
-                    }
-                    String nameOfRoom = strings[1];
-                    if (!validator.validateRoomName(nameOfRoom)) {
-                        return new CommandErrorSyntax();
-                    }
+                "/list", args -> args.length == 1 ? new CommandList(sessionSet) : "Command '/list' cannot have any args.",
+                "/help", args -> args.length == 1 ? new CommandHelp() : "Command '/help' cannot have any args.",
+                "/rooms", args -> args.length == 1 ? new CommandRooms(rooms) : "Command '/rooms' cannot have any args.",
+                "/join", args -> {
+                    if (args.length != 2) return "Command '/join' must have syntax '/join [room_name]'.";
+                    String nameOfRoom = args[1];
+                    if (!validator.validateRoomName(nameOfRoom)) return "Invalid name for room.";
                     return new CommandJoin(nameOfRoom, rooms);
                 },
-                "/createroom", cmds -> {
-                    String[] strings = cmds.split(" ");
-                    if (strings.length != 2) {
-                        return new CommandErrorSyntax();
-                    }
-                    String nameOfRoom = strings[1];
-                    if (!validator.validateRoomName(nameOfRoom)) {
-                        return new CommandErrorSyntax();
-                    }
+                "/createroom", args -> {
+                    if (args.length != 2) return "Command '/createroom' must have syntax '/createroom [room_name]'.";
+                    String nameOfRoom = args[1];
+                    if (!validator.validateRoomName(nameOfRoom)) return "Invalid name for room.";
                     return new CommandCreateRoom(nameOfRoom, rooms);
                 }
         );
@@ -125,11 +115,21 @@ public class ServerHandler {
     private void executeCommand(Message message, Session mainSession) {
 
         String editedMsg = message.getMessage().trim().replaceAll("\\s+", " ");
-        String nameOfCommand = editedMsg.split(" ")[0];
+        String[] partsOfCommand = editedMsg.split(" ", 2);
+        String nameOfCommand = partsOfCommand[0];
+        Command cmd;
         try {
-            Function<String, Command> factory = commandsFactory.getOrDefault(nameOfCommand, DEFAULT_COMMAND);
-            Command cmd = factory.apply(editedMsg);
+            Function<String[], Object> factory = commandsFactory.getOrDefault(nameOfCommand, DEFAULT_COMMAND);
+            Object obj = factory.apply(partsOfCommand);
+            if (obj instanceof Command) {
+                cmd = (Command) obj;
+            }
+            else {
+                String causeOfError = (String) obj;
+                cmd = new CommandErrorSyntax(causeOfError);
+            }
             cmd.execute(mainSession);
+
         } catch (Exception e) {
             logger.error("Failed to execute command", e);
         }
