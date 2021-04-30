@@ -6,6 +6,7 @@ import message.MessageType;
 import room.Room;
 import session.Session;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 
@@ -21,7 +22,7 @@ public class CommandCreateRoom implements Command {
     }
 
     @Override
-    public void execute(Session session) throws Exception {
+    public void execute(Session session) throws IOException {
 
         Room room = new Room(nameOfRoom);
         if (!rooms.add(room)) {

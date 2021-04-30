@@ -38,7 +38,7 @@ public class ClientHandler {
         }
     }
 
-    public void onConnected(Session session) throws Exception {
+    public void onConnected(Session session) throws IOException {
         Message joinMessage = new Message(MessageType.JOIN, user.getName(), "");
         session.writeMessage(joinMessage);
     }
