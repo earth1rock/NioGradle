@@ -2,6 +2,7 @@ package client;
 
 import codec.Codec;
 import message.MessageType;
+import message.IllegalLengthOfMessageException;
 import session.Session;
 import message.Message;
 import message.MessageFormatter;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.Viewer;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
@@ -20,7 +22,7 @@ public class ClientTemp implements Runnable {
     private final ClientHandler clientHandler;
     private final Session session;
 
-    ClientTemp(User user, String hostname, int port, Codec codec, ClientHandler clientHandler) throws Exception {
+    ClientTemp(User user, String hostname, int port, Codec codec, ClientHandler clientHandler) throws IOException {
         InetSocketAddress inetSocketAddress = new InetSocketAddress(hostname, port);
         SocketChannel socketChannel = SocketChannel.open(inetSocketAddress);
         this.session = new Session(socketChannel, codec, user);
@@ -32,7 +34,7 @@ public class ClientTemp implements Runnable {
 
         try {
             clientHandler.onConnected(session);
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to connect to server", e);
             return;
         }
@@ -40,14 +42,14 @@ public class ClientTemp implements Runnable {
             try {
                 Message result = session.readMessage();
                 clientHandler.doTask(session, result);
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logger.error("Failed to read message. Probably connection is lost", e);
                 break;
             }
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IOException {
         Scanner scanner = new Scanner(System.in);
 
         String userName;
@@ -75,11 +77,11 @@ public class ClientTemp implements Runnable {
             try {
                 Message generatedMessage = ClientUtil.generateMessage(user, message);
                 session.writeMessage(generatedMessage);
-            } catch (Exception e) {
-                if (e instanceof IllegalArgumentException) {
-                    logger.error("Failed to send message", e);
-                    continue;
-                }
+            }
+            catch (IllegalLengthOfMessageException e) {
+                logger.error("Illegal length of message", e);
+            }
+            catch (IOException e) {
                 logger.error("Failed to send message", e);
                 break;
             }

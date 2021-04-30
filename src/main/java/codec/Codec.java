@@ -1,5 +1,6 @@
 package codec;
 
+import message.IllegalLengthOfMessageException;
 import message.Message;
 
 import java.nio.ByteBuffer;
@@ -11,6 +12,11 @@ public class Codec {
 
     private static final short MAX_LENGTH = Short.MAX_VALUE;
 
+    /**
+     * @param message Message object to encode to bytes
+     * @return ByteBuffer
+     * @throws IllegalLengthOfMessageException if message length more than 32767 bytes
+     */
     public ByteBuffer encode(Message message) {
 
         byte[] messageBytes = message.getMessage().getBytes(StandardCharsets.UTF_8);
@@ -37,7 +43,7 @@ public class Codec {
 
             return messageBuffer;
         } else {
-            throw new IllegalArgumentException("Max message size = " + MAX_LENGTH + " | Your message size is " + message.getMessage().length());
+            throw new IllegalLengthOfMessageException("Max message size = " + MAX_LENGTH + " | Your message size is " + message.getMessage().length());
         }
     }
 

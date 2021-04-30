@@ -45,10 +45,9 @@ class CodecTest {
     @Test
     void encode_tempMessage_test() {
         ByteBuffer actual = codec.encode(tempMessage);
+        expected.flip();
+        actual.flip();
         assertEquals(expected, actual);
 
-        if (expected.hasArray() && actual.hasArray()) {
-            assertArrayEquals(expected.array(), actual.array());
-        }
     }
 }

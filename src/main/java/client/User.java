@@ -1,8 +1,7 @@
 package client;
 
-import room.Room;
-
 import java.util.Objects;
+import room.Room;
 
 public class User {
 
@@ -10,7 +9,7 @@ public class User {
     private Room room;
 
     public User(String name) {
-        this.name = name;
+        this.name = Objects.requireNonNull(name);
     }
 
     public String getName() {
