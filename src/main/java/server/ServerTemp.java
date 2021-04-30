@@ -25,7 +25,7 @@ public class ServerTemp implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(ServerTemp.class);
 
 
-    ServerTemp(int port, Codec codec, ServerHandler serverHandler) throws Exception {
+    ServerTemp(int port, Codec codec, ServerHandler serverHandler) throws IOException {
         this.port = port;
         this.codec = Objects.requireNonNull(codec, "Codec must not be null");
         inetSocketAddress = new InetSocketAddress(port);
@@ -58,7 +58,7 @@ public class ServerTemp implements Runnable {
                     if (key.isReadable()) this.read(key);
                 }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("ERROR ", e);
         } finally {
             try {
@@ -70,7 +70,7 @@ public class ServerTemp implements Runnable {
         }
     }
 
-    private void accept(SelectionKey key) throws Exception {
+    private void accept(SelectionKey key) throws IOException {
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
         socketChannel.configureBlocking(false);
         Session session = new Session(socketChannel, codec);
@@ -84,7 +84,7 @@ public class ServerTemp implements Runnable {
         try {
             Message inputMessage = session.readMessage();
             serverHandler.doTask(session, inputMessage);
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.info("Failed to read message", e);
         }
     }

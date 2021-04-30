@@ -8,6 +8,7 @@ import message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -25,7 +26,7 @@ public class ServerHandler {
         sessionSet = new HashSet<>();
     }
 
-    public void onSessionCreate(Session session) throws Exception {
+    public void onSessionCreate(Session session) throws IOException {
         sessionSet.add(session);
         session.writeMessage(welcomeMessage);
         session.writeMessage(infoMessage);
@@ -39,7 +40,7 @@ public class ServerHandler {
         logger.info(formattedMessage);
     }
 
-    public void doTask(Session session, Message message) throws Exception {
+    public void doTask(Session session, Message message) throws IOException {
 
         switch (message.getMessageType()) {
 

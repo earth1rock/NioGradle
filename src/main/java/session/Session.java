@@ -49,7 +49,7 @@ public class Session {
         return null;
     }
 
-    public Message readMessage() throws Exception {
+    public Message readMessage() throws IOException {
         try {
             ByteBuffer byteBuffer = ByteBuffer.allocate(buffer_size);
             if (restBuffer != null) {
@@ -81,14 +81,14 @@ public class Session {
         }
     }
 
-    private void checkBytesRead(int bytesRead) throws Exception {
+    private void checkBytesRead(int bytesRead) throws IOException {
         if (bytesRead == -1) {
             socketChannel.close();
-            throw new Exception("Channel has reached end-of-stream");
+            throw new IOException("Channel has reached end-of-stream");
         }
     }
 
-    public int writeMessage(Message message) throws Exception {
+    public int writeMessage(Message message) throws IOException {
         ByteBuffer buffer = codec.encode(message);
         buffer.flip();
         return socketChannel.write(buffer);

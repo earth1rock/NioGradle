@@ -13,7 +13,13 @@ public class ClientHandler {
     private final User user;
     private final Viewer viewer;
 
-    public ClientHandler(User user, Viewer viewer) throws NullPointerException {
+    /**
+     *
+     * @param user Object of user
+     * @param viewer Object for print some messages
+     * @throws NullPointerException if user is null or viewer is null
+     */
+    public ClientHandler(User user, Viewer viewer) {
         this.user = Objects.requireNonNull(user, "User must not be null");
         this.viewer = Objects.requireNonNull(viewer, "Viewer must not be null");
     }
@@ -42,7 +48,7 @@ public class ClientHandler {
         }
     }
 
-    public void onConnected(Session session) throws Exception {
+    public void onConnected(Session session) throws IOException {
         Message joinMessage = new Message(MessageType.JOIN, user.getName(), "");
         session.writeMessage(joinMessage);
     }
