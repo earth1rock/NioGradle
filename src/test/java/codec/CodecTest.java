@@ -40,14 +40,12 @@ class CodecTest {
         expected.putShort(messageLength);
         expected.put(userNameBytes);
         expected.put(messageBytes);
+        expected.flip();
     }
 
     @Test
     void encode_tempMessage_test() {
         ByteBuffer actual = codec.encode(tempMessage);
-        expected.flip();
-        actual.flip();
         assertEquals(expected, actual);
-
     }
 }

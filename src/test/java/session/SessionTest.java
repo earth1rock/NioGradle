@@ -27,7 +27,7 @@ class SessionTest {
 
         ByteBuffer flippedBuffer = byteBuffer.duplicate().flip();
 
-        when(codec.encode(tempMessage)).thenReturn(byteBuffer);
+        when(codec.encode(tempMessage)).thenReturn(byteBuffer.flip());
         when(socketChannel.write(flippedBuffer)).thenReturn(bytes.length);
 
         session.writeMessage(tempMessage);

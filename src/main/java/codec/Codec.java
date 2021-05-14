@@ -41,9 +41,9 @@ public class Codec {
             messageBuffer.put(userNameBytes);
             messageBuffer.put(messageBytes);
 
-            return messageBuffer;
+            return messageBuffer.flip();
         } else {
-            throw new IllegalLengthOfMessageException("Max message size = " + MAX_LENGTH + " | Your message size is " + message.getMessage().length());
+            throw new IllegalLengthOfMessageException(MAX_LENGTH, message.getMessage().length());
         }
     }
 

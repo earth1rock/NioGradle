@@ -90,7 +90,6 @@ public class Session {
 
     public int writeMessage(Message message) throws IOException {
         ByteBuffer buffer = codec.encode(message);
-        buffer.flip();
         return socketChannel.write(buffer);
     }
 
