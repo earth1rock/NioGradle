@@ -1,11 +1,20 @@
 package server;
 
+import codec.Codec;
+import message.MessageFormatter;
+
 import java.io.IOException;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        ServerTemp server = new ServerTemp();
+        Codec codec = new Codec();
+        MessageFormatter formatter = new MessageFormatter();
+        Viewer viewer = new Viewer(formatter);
+        ServerHandler serverHandler = new ServerHandler(viewer);
+        ServerTemp server = new ServerTemp(2222, codec, serverHandler);
+        server.init();
+
         Thread serverThread = new Thread(server);
         serverThread.start();
 

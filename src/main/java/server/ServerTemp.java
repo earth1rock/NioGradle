@@ -1,36 +1,45 @@
 package server;
 
-import codec.Reader;
-import codec.Writer;
-import org.apache.log4j.BasicConfigurator;
+import codec.Codec;
+import session.Session;
+import message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 
 public class ServerTemp implements Runnable {
     private final Selector selector;
     private final ServerSocketChannel serverSocketChannel;
-    private final ByteBuffer welcomeBuffer = ByteBuffer.wrap(Writer.encodeMessage("Welcome to NioChat!").getBytes());
-    private final int port = 2222;
-    private final Logger logger = LoggerFactory.getLogger(ServerTemp.class);
+    private final int port;
+    private final ServerHandler serverHandler;
+    private final Codec codec;
+    private final InetSocketAddress inetSocketAddress;
+    private final static Logger logger = LoggerFactory.getLogger(ServerTemp.class);
 
-    ServerTemp() throws IOException {
+
+    ServerTemp(int port, Codec codec, ServerHandler serverHandler) throws IOException {
+        this.port = port;
+        this.codec = Objects.requireNonNull(codec, "Codec must not be null");
+        inetSocketAddress = new InetSocketAddress(port);
         selector = Selector.open();
         serverSocketChannel = ServerSocketChannel.open();
-        InetSocketAddress inetSocketAddress = new InetSocketAddress(port);
+        this.serverHandler = Objects.requireNonNull(serverHandler, "ServerHandler must not be null");
+    }
+
+    public void init() throws IOException {
         serverSocketChannel.bind(inetSocketAddress);
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
     }
+
 
     @Override
     public void run() {
@@ -50,7 +59,7 @@ public class ServerTemp implements Runnable {
                 }
             }
         } catch (IOException e) {
-            logger.error(e.getMessage());
+            logger.error("ERROR ", e);
         } finally {
             try {
                 selector.close();
@@ -63,54 +72,21 @@ public class ServerTemp implements Runnable {
 
     private void accept(SelectionKey key) throws IOException {
         SocketChannel socketChannel = ((ServerSocketChannel) key.channel()).accept();
-        String address = socketChannel.socket().getInetAddress().toString() + ":" + socketChannel.socket().getPort();
         socketChannel.configureBlocking(false);
-        socketChannel.register(selector, SelectionKey.OP_READ, address);
-        echo("Connected client: " + address);
-        socketChannel.write(welcomeBuffer);
-        welcomeBuffer.rewind();
-        logger.info("Connected client: " + address);
+        Session session = new Session(socketChannel, codec);
+        socketChannel.register(selector, SelectionKey.OP_READ, session);
+        serverHandler.onSessionCreate(session);
     }
 
-    private void read(SelectionKey key) throws IOException {
 
-        SocketChannel socketChannel = (SocketChannel) key.channel();
-        String result;
-        Reader reader = new Reader(socketChannel);
+    private void read(SelectionKey key) {
+        Session session = (Session) key.attachment();
         try {
-            int lengthMessage = reader.getLengthMessage();
-            if (lengthMessage > -1) {
-                String msg = reader.getMessageText(lengthMessage);
-                result = key.attachment() + " : " + msg;
-            }
-            else {
-                result = "Disconnect client: " + key.attachment();
-                socketChannel.close();
-            }
-            logger.info(result);
-            echo(result);
+            Message inputMessage = session.readMessage();
+            serverHandler.doTask(session, inputMessage);
+        } catch (IOException e) {
+            logger.info("Failed to read message", e);
         }
-        catch (Exception e) {
-            socketChannel.close();
-            logger.error(e.toString());
-        }
-
-    }
-
-    private void echo(String message) throws IOException {
-        Writer writer;
-        for (SelectionKey key : selector.keys()) {
-            if (key.isValid() && key.channel() instanceof SocketChannel) {
-                SocketChannel socketChannel = (SocketChannel) key.channel();
-                writer = new Writer(socketChannel);
-                try {
-                    writer.sendMessage(message);
-                } catch (Exception e) {
-                    socketChannel.close();
-                }
-            }
-        }
-
     }
 }
 
